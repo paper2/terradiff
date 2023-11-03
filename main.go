@@ -3,13 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
-
-	"golang.org/x/exp/slog"
 )
 
 func main() {
+	SetLogger(LevelDebug)
 	app := NewApp()
 	if err := app.Run(os.Args); err != nil {
-		slog.Error(fmt.Sprintf("%+v", err))
+		Logger().Error(fmt.Sprintf("%+v", err))
 	}
 }

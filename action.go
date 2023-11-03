@@ -1,64 +1,64 @@
 package main
 
 import (
-	"os/exec"
+	"context"
+	"fmt"
 
 	"github.com/cockroachdb/errors"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/exp/slog"
+	"github.com/wI2L/jsondiff"
 )
 
-func teradiff(cCtx *cli.Context) error {
-	name := cCtx.String("branch")
-	testDir := "/Users/yohei/Desktop/test-git"
-	r, err := git.PlainOpen(testDir)
-	if err != nil {
-		return errors.Wrap(err, "open git repo")
-	}
-	w, err := r.Worktree()
-	if err != nil {
-		return errors.Wrap(err, "get worktree")
-	}
-	// TODO: checkout するとworking directoryが消えるので消えないオプションを使った方がよさそう
-	err = w.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.NewBranchReferenceName(name),
-	})
-	if err != nil {
-		return errors.Wrap(err, "checkout")
-	}
-	slog.Info("checkout: " + name)
+type Actions struct {
+}
 
-	generateJson(testDir)
+func NewActions() *Actions {
+	return &Actions{}
+}
+
+func (a *Actions) Terradiff(cCtx *cli.Context) error {
+	if err := teradiff(cCtx); err != nil {
+		return err
+	}
+	return nil
+}
+
+func teradiff(cCtx *cli.Context) error {
+	branch := cCtx.String("branch")
+	// TODO: 指定できるようにする。新規作成できるようにするのもありかもなあ。
+	testDir := "/Users/yohei/Desktop/test-git"
+
+	srcResult, err := genPlanRsesultWithCheckout(cCtx.Context, branch, testDir)
+	if err != nil {
+		return err
+	}
+
+	destResult, err := genPlanRsesultWithCheckout(cCtx.Context, "main", testDir)
+	if err != nil {
+		return err
+	}
+
+	patch, err := jsondiff.Compare(srcResult, destResult)
+	if err != nil {
+		return errors.Wrap(err, "json diff")
+	}
+	for _, op := range patch {
+		Logger().Debug(fmt.Sprintf("op: %+v", op))
+	}
 
 	return nil
 }
 
-// TODO: jsonを返すようにしよう
-func generateJson(testDir string) error {
-	cmd := exec.Command("terraform", "init")
-	cmd.Dir = testDir
-	err := cmd.Run()
+func genPlanRsesultWithCheckout(ctx context.Context, branch string, testDir string) (*PlanResult, error) {
+	git, err := NewGit(testDir)
 	if err != nil {
-		return errors.Wrap(err, "run terraform")
+		return nil, err
 	}
 
-	cmd = exec.Command("terraform", "plan", "-out=plan")
-	cmd.Dir = testDir
-	out, err := cmd.CombinedOutput()
+	err = git.Checkout(branch)
 	if err != nil {
-		return errors.Wrap(err, string(out))
+		return nil, err
 	}
 
-	cmd = exec.Command("terraform", "show", "-json", "plan")
-	cmd.Dir = testDir
-	out, err = cmd.CombinedOutput()
-	slog.Info("output", "json", string(out))
-	if err != nil {
-		return errors.Wrap(err, "run terraform")
-	}
-
-	return nil
-
+	return generatePlanResult(ctx, testDir)
 }

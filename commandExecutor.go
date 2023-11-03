@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log/slog"
 	"os/exec"
 
 	"github.com/cockroachdb/errors"
@@ -25,7 +24,7 @@ func (ce *CommandExecutor) RunContext(ctx context.Context, name string, args ...
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
-	slog.Debug(fmt.Sprintf("stdout: %s", stdout.String()))
+	Logger().Debug(fmt.Sprintf("stdout: %s", stdout.String()))
 	if err != nil {
 		return errors.Wrap(err, "command execution failed: "+stderr.String())
 	}
@@ -39,9 +38,9 @@ func (ce *CommandExecutor) RunContextAndCaptureOutput(ctx context.Context, name 
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
-	slog.Debug(fmt.Sprintf("stdout: %s", stdout.String()))
+	Logger().Debug(fmt.Sprintf("stdout: %s", stdout.String()))
 	if err != nil {
-		return "", errors.Wrap(err, "command execution failed: "+stderr.String())
+		return "", errors.Wrap(err, "command execution stdout: "+stderr.String())
 	}
 	return stdout.String(), nil
 }

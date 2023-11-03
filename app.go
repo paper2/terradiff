@@ -12,6 +12,6 @@ func NewApp() *cli.App {
 				Usage: "language for the greeting",
 			},
 		},
-		Action: teradiff,
+		Action: NewActions().Terradiff,
 	}
 }
