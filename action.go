@@ -34,12 +34,12 @@ func teradiff(cCtx *cli.Context) error {
 	dstDir := workDir + "/dst"
 	repoURL := "https://github.com/paper2/test-terradiff"
 
-	srcResult, err := gitCloneAndCheckout(cCtx.Context, workDir, srcDir, srcBranch, repoURL)
+	srcResult, err := gitCloneAndgenPlanResult(cCtx.Context, workDir, srcDir, srcBranch, repoURL)
 	if err != nil {
 		return err
 	}
 
-	destResult, err := gitCloneAndCheckout(cCtx.Context, workDir, dstDir, dstBranch, repoURL)
+	destResult, err := gitCloneAndgenPlanResult(cCtx.Context, workDir, dstDir, dstBranch, repoURL)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func gitClone(ctx context.Context, workDir, cloneDir, branch, repoURL string) er
 	return nil
 }
 
-func gitCloneAndCheckout(ctx context.Context, workDir, cloneDir, branch, repoURL string) (*PlanResult, error) {
+func gitCloneAndgenPlanResult(ctx context.Context, workDir, cloneDir, branch, repoURL string) (*PlanResult, error) {
 	err := gitClone(ctx, workDir, cloneDir, branch, repoURL)
 	if err != nil {
 		return nil, err
