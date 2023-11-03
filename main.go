@@ -9,5 +9,6 @@ func main() {
 	app := NewApp()
 	if err := app.Run(os.Args); err != nil {
 		Logger().Error(fmt.Sprintf("%+v", err))
+		os.Exit(1)
 	}
 }

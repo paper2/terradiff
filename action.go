@@ -13,11 +13,8 @@ type gitCloner interface {
 }
 
 func terradiff(cCtx *cli.Context) error {
-	if cCtx.Bool(debugFlag) {
-		SetLogger(LevelDebug)
-	} else {
-		SetLogger(LevelInfo)
-	}
+	SetLogger(cCtx)
+
 	srcBranch := cCtx.String(srcBranchFlag)
 	dstBranch := cCtx.String(dstBranchFlag)
 	repoURL := cCtx.String(repoURLFlag)
