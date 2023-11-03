@@ -39,17 +39,14 @@ func teradiff(cCtx *cli.Context) error {
 		return err
 	}
 
-	destResult, err := gitCloneAndgenPlanResult(cCtx.Context, workDir, dstDir, dstBranch, repoURL)
+	dstResult, err := gitCloneAndgenPlanResult(cCtx.Context, workDir, dstDir, dstBranch, repoURL)
 	if err != nil {
 		return err
 	}
 
-	patch, err := jsondiff.Compare(srcResult, destResult)
+	err = compareResult(srcResult, dstResult)
 	if err != nil {
-		return errors.Wrap(err, "json diff")
-	}
-	for _, op := range patch {
-		Logger().Debug(fmt.Sprintf("op: %+v", op))
+		return err
 	}
 
 	return nil
@@ -78,4 +75,15 @@ func gitCloneAndgenPlanResult(ctx context.Context, workDir, cloneDir, branch, re
 		return nil, err
 	}
 	return pr, nil
+}
+
+func compareResult(src, dst *PlanResult) error {
+	patch, err := jsondiff.Compare(src, dst)
+	if err != nil {
+		return errors.Wrap(err, "json diff")
+	}
+	for _, op := range patch {
+		Logger().Debug(fmt.Sprintf("op: %+v", op))
+	}
+	return nil
 }
