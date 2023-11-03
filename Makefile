@@ -1,5 +1,5 @@
-.PHONY: run
-run:
+.PHONY: test-run
+test-run:
 	go build
-	./teradiff --branch branch1 | jq -r '. | "\(.level): \(.msg)"'
+	./terradiff -s branch1 -w ~/Desktop/terradiff-workspace -r 'https://github.com/paper2/test-terradiff' | jq -r '. | "\(.level): \(.msg)"'
 

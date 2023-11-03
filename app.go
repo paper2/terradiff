@@ -2,16 +2,47 @@ package main
 
 import "github.com/urfave/cli/v2"
 
-// TODO: https://github.com/suzuki-shunsuke/tfcmt/blob/main/pkg/cli/app.go みたいにする
+const (
+	workDirFlag   = "work-dir"
+	srcBranchFlag = "source-branch"
+	dstBranchFlag = "destination-branch"
+	repoURLFlag   = "repository-url"
+	debugFlag     = "debug"
+)
+
 func NewApp() *cli.App {
-	return &cli.App{
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "branch",
-				Value: "main",
-				Usage: "language for the greeting",
-			},
+	app := cli.NewApp()
+	app.Flags = []cli.Flag{
+		&cli.StringFlag{
+			Name:    workDirFlag,
+			Value:   "./terradiff-workspace",
+			Usage:   "work directory",
+			Aliases: []string{"w"},
 		},
-		Action: NewActions().Terradiff,
+		&cli.StringFlag{
+			Required: true,
+			Name:     srcBranchFlag,
+			Usage:    "source branch name",
+			Aliases:  []string{"s"},
+		},
+		&cli.StringFlag{
+			Name:    dstBranchFlag,
+			Value:   "main",
+			Usage:   "destination branch name",
+			Aliases: []string{"d"},
+		},
+		&cli.StringFlag{
+			Required: true,
+			Name:     repoURLFlag,
+			Usage:    "repository url",
+			Aliases:  []string{"r"},
+		},
+		&cli.BoolFlag{
+			Name:  debugFlag,
+			Value: false,
+			Usage: "debug log",
+		},
 	}
+	app.Action = terradiff
+	return app
 }

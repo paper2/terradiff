@@ -17,7 +17,7 @@ func NewGit(repoURL, cloneDir, branch string) *Git {
 
 func (g *Git) gitClone(ctx context.Context) error {
 	if _, err := os.Stat(g.cloneDir); !os.IsNotExist(err) {
-		Logger().Info("skip clone repository.", "repository", g.repoURL, "branch", g.branch)
+		Logger().Info("skip clone repository. there already exists.", "repository", g.repoURL, "branch", g.branch)
 		return nil
 	}
 
