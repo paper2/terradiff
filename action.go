@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
+	"os"
 
 	"github.com/cockroachdb/errors"
+	"github.com/google/go-cmp/cmp"
 	"github.com/urfave/cli/v2"
-	"github.com/wI2L/jsondiff"
 )
 
 type Actions struct {
@@ -33,29 +34,31 @@ func (a *Actions) Terradiff(cCtx *cli.Context) error {
 
 	srcGit := NewGit(repoURL, srcDir, srcBranch)
 	dstGit := NewGit(repoURL, dstDir, dstBranch)
-	if err := teradiff(cCtx.Context, srcGit, dstGit); err != nil {
+	cr, err := teradiff(cCtx.Context, srcGit, dstGit)
+	if err != nil {
 		return err
 	}
+
+	err = saveToFile(workDir+"/result.json", cr)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func teradiff(ctx context.Context, srcGit, dstGit gitCloner) error {
+func teradiff(ctx context.Context, srcGit, dstGit gitCloner) (*CompareResult, error) {
 	srcResult, err := gitCloneAndgenPlanResult(ctx, srcGit)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	dstResult, err := gitCloneAndgenPlanResult(ctx, dstGit)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = compareResult(srcResult, dstResult)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return compare(srcResult, dstResult), nil
 }
 
 func gitCloneAndgenPlanResult(ctx context.Context, git gitCloner) (*PlanResult, error) {
@@ -70,13 +73,36 @@ func gitCloneAndgenPlanResult(ctx context.Context, git gitCloner) (*PlanResult, 
 	return pr, nil
 }
 
-func compareResult(src, dst *PlanResult) error {
-	patch, err := jsondiff.Compare(src, dst)
+type CompareResult struct {
+	IsEqual bool
+	Diff    string
+}
+
+func compare(src, dst *PlanResult) *CompareResult {
+	var cr CompareResult
+	if cmp.Equal(src, dst) {
+		Logger().Info("resources are the same.")
+		cr.IsEqual = true
+	} else {
+		Logger().Info("resources are different.")
+		cr.IsEqual = false
+		cr.Diff = cmp.Diff(src, dst)
+	}
+	return &cr
+}
+
+func saveToFile(filename string, data any) error {
+	file, err := os.Create(filename)
 	if err != nil {
-		return errors.Wrap(err, "json diff")
+		return errors.Wrap(err, "failed to create file")
 	}
-	for _, op := range patch {
-		Logger().Debug(fmt.Sprintf("op: %+v", op))
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	err = encoder.Encode(data)
+	if err != nil {
+		return errors.Wrap(err, "failed to encode json")
 	}
+
 	return nil
 }
