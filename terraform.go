@@ -5,14 +5,12 @@ import (
 	"encoding/json"
 )
 
-// TODO: jsonを返すようにしよう
 func generatePlanResult(ctx context.Context, testDir string) (*PlanResult, error) {
 	ce := NewCommandExecutor(testDir)
 
 	err := ce.RunContext(ctx, "terraform", "init")
 	if err != nil {
 		return nil, err
-		// return errors.Wrap(err, "terraform init")
 	}
 
 	binaryName := "plan-result-binary"

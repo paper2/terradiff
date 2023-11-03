@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/cockroachdb/errors"
 	"github.com/urfave/cli/v2"
@@ -24,16 +25,29 @@ func (a *Actions) Terradiff(cCtx *cli.Context) error {
 }
 
 func teradiff(cCtx *cli.Context) error {
-	branch := cCtx.String("branch")
+	srcBranch := cCtx.String("branch")
+	// TODO: 引数から受け取る
+	dstBranch := "main"
 	// TODO: 指定できるようにする。新規作成できるようにするのもありかもなあ。
-	testDir := "/Users/yohei/Desktop/test-git"
+	workDir := "/Users/yohei/Desktop/teradiff-work"
+	srcDir := workDir + "/src"
+	dstDir := workDir + "/dst"
+	repoURL := "https://github.com/paper2/test-terradiff"
 
-	srcResult, err := genPlanRsesultWithCheckout(cCtx.Context, branch, testDir)
+	err := gitClone(cCtx.Context, workDir, srcDir, srcBranch, repoURL)
+	if err != nil {
+		return err
+	}
+	srcResult, err := generatePlanResult(cCtx.Context, srcDir)
 	if err != nil {
 		return err
 	}
 
-	destResult, err := genPlanRsesultWithCheckout(cCtx.Context, "main", testDir)
+	err = gitClone(cCtx.Context, workDir, dstDir, dstBranch, repoURL)
+	if err != nil {
+		return err
+	}
+	destResult, err := generatePlanResult(cCtx.Context, dstDir)
 	if err != nil {
 		return err
 	}
@@ -49,16 +63,15 @@ func teradiff(cCtx *cli.Context) error {
 	return nil
 }
 
-func genPlanRsesultWithCheckout(ctx context.Context, branch string, testDir string) (*PlanResult, error) {
-	git, err := NewGit(testDir)
-	if err != nil {
-		return nil, err
+func gitClone(ctx context.Context, workDir, cloneDir, branch, repoURL string) error {
+	if _, err := os.Stat(cloneDir); !os.IsNotExist(err) {
+		Logger().Info("skip clone repository.", "repository", repoURL, "branch", branch)
+		return nil
 	}
 
-	err = git.Checkout(branch)
+	err := NewCommandExecutor(workDir).RunContext(ctx, "git", "clone", "-b", branch, repoURL, cloneDir)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	return generatePlanResult(ctx, testDir)
+	return nil
 }
