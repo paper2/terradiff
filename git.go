@@ -1,44 +1,33 @@
 package main
 
 import (
-	"github.com/cockroachdb/errors"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
+	"context"
+	"os"
 )
 
 type Git struct {
-	dir string
-	wt  *git.Worktree
+	repoURL  string
+	cloneDir string
+	branch   string
 }
 
-func NewGit(dir string) (*Git, error) {
-	r, err := git.PlainOpen(dir)
-	if err != nil {
-		return nil, errors.Wrap(err, "open git repo")
-	}
-	w, err := r.Worktree()
-	if err != nil {
-		return nil, errors.Wrap(err, "get worktree")
-	}
-	return &Git{dir: dir, wt: w}, nil
+func NewGit(repoURL, cloneDir, branch string) *Git {
+	return &Git{repoURL: repoURL, cloneDir: cloneDir, branch: branch}
 }
 
-func (g *Git) Checkout(branch string) error {
-	status, err := g.wt.Status()
-	if err != nil {
-		return errors.Wrap(err, "git status")
-	}
-	if !status.IsClean() {
-		return errors.New("working tree is not clean. commit or stash changes.")
+func (g *Git) gitClone(ctx context.Context) error {
+	if _, err := os.Stat(g.cloneDir); !os.IsNotExist(err) {
+		Logger().Info("skip clone repository.", "repository", g.repoURL, "branch", g.branch)
+		return nil
 	}
 
-	err = g.wt.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.NewBranchReferenceName(branch),
-	})
+	err := NewCommandExecutor(".").RunContext(ctx, "git", "clone", "-b", g.branch, g.repoURL, g.cloneDir)
 	if err != nil {
-		return errors.Wrap(err, "checkout")
+		return err
 	}
-	Logger().Debug("checkout: " + branch)
-
 	return nil
+}
+
+func (g *Git) getCloneDir() string {
+	return g.cloneDir
 }
