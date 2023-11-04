@@ -28,23 +28,23 @@ type Runner interface {
 }
 
 type Terraform struct {
-	ce Runner
+	r Runner
 }
 
 func NewTerraform(ce Runner) *Terraform {
-	return &Terraform{ce: ce}
+	return &Terraform{r: ce}
 }
 
 func (tf *Terraform) init(ctx context.Context) error {
-	return tf.ce.RunContext(ctx, "terraform", "init")
+	return tf.r.RunContext(ctx, "terraform", "init")
 }
 
 func (tf *Terraform) genPlanBinary(ctx context.Context, path string) error {
-	return tf.ce.RunContext(ctx, "terraform", "plan", "-out="+path)
+	return tf.r.RunContext(ctx, "terraform", "plan", "-out="+path)
 }
 
 func (tf *Terraform) unmarshalPlanBinary(ctx context.Context, path string) (*PlanResult, error) {
-	out, err := tf.ce.RunContextAndCaptureOutput(ctx, "terraform", "show", "-json", path)
+	out, err := tf.r.RunContextAndCaptureOutput(ctx, "terraform", "show", "-json", path)
 	if err != nil {
 		return nil, err
 	}
