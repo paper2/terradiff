@@ -5,36 +5,6 @@ import (
 	"encoding/json"
 )
 
-// TODO: 関数もう少し小さく分ける。structとinteraceも用意する？
-func generatePlanResult(ctx context.Context, planDir string) (*PlanResult, error) {
-	ce := NewCommandExecutor(planDir)
-
-	err := ce.RunContext(ctx, "terraform", "init")
-	if err != nil {
-		return nil, err
-	}
-
-	binaryName := "plan-result-binary"
-	err = ce.RunContext(ctx, "terraform", "plan", "-out="+binaryName)
-	if err != nil {
-		return nil, err
-	}
-
-	out, err := ce.RunContextAndCaptureOutput(ctx, "terraform", "show", "-json", binaryName)
-	if err != nil {
-		return nil, err
-	}
-	Logger().Debug(out)
-
-	var pr PlanResult
-	err = json.Unmarshal([]byte(out), &pr)
-	if err != nil {
-		return nil, err
-	}
-
-	return &pr, nil
-}
-
 type PlanResult struct {
 	ResourceChanges []ResourceChange `json:"resource_changes"`
 }
@@ -50,4 +20,55 @@ type ResourceChange struct {
 	Deposed         string          `json:"deposed"`
 	Change          json.RawMessage `json:"change"`
 	ActionReason    string          `json:"action_reason"`
+}
+
+type Runner interface {
+	RunContext(ctx context.Context, name string, args ...string) error
+	RunContextAndCaptureOutput(ctx context.Context, name string, args ...string) (string, error)
+}
+
+type Terraform struct {
+	ce Runner
+}
+
+func NewTerraform(ce Runner) *Terraform {
+	return &Terraform{ce: ce}
+}
+
+func (tf *Terraform) init(ctx context.Context) error {
+	return tf.ce.RunContext(ctx, "terraform", "init")
+}
+
+func (tf *Terraform) genPlanBinary(ctx context.Context, path string) error {
+	return tf.ce.RunContext(ctx, "terraform", "plan", "-out="+path)
+}
+
+func (tf *Terraform) unmarshalPlanBinary(ctx context.Context, path string) (*PlanResult, error) {
+	out, err := tf.ce.RunContextAndCaptureOutput(ctx, "terraform", "show", "-json", path)
+	if err != nil {
+		return nil, err
+	}
+
+	var pr PlanResult
+	err = json.Unmarshal([]byte(out), &pr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pr, nil
+}
+
+func (tf Terraform) GenPlanResult(ctx context.Context) (*PlanResult, error) {
+	err := tf.init(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	binaryPath := "plan.binary"
+	err = tf.genPlanBinary(ctx, binaryPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return tf.unmarshalPlanBinary(ctx, binaryPath)
 }

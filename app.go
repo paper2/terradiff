@@ -49,6 +49,6 @@ func NewApp() *cli.App {
 			Usage: "json log",
 		},
 	}
-	app.Action = terradiff
+	app.Action = TerradiffAction
 	return app
 }
