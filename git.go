@@ -6,28 +6,25 @@ import (
 )
 
 type Git struct {
+	r        Runner
 	repoURL  string
 	cloneDir string
 	branch   string
 }
 
-func NewGit(repoURL, cloneDir, branch string) *Git {
-	return &Git{repoURL: repoURL, cloneDir: cloneDir, branch: branch}
+func NewGit(runner Runner, repoURL, cloneDir, branch string) *Git {
+	return &Git{r: runner, repoURL: repoURL, cloneDir: cloneDir, branch: branch}
 }
 
-func (g *Git) gitClone(ctx context.Context) error {
+func (g *Git) GitClone(ctx context.Context) error {
 	if _, err := os.Stat(g.cloneDir); !os.IsNotExist(err) {
 		Logger().Info("skip clone repository. there already exists.", "repository", g.repoURL, "branch", g.branch)
 		return nil
 	}
 
-	err := NewCommandExecutor(".").RunContext(ctx, "git", "clone", "-b", g.branch, g.repoURL, g.cloneDir)
+	err := g.r.RunContext(ctx, "git", "clone", "-b", g.branch, g.repoURL, g.cloneDir)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func (g *Git) getCloneDir() string {
-	return g.cloneDir
 }

@@ -8,9 +8,7 @@ import (
 )
 
 type gitCloner interface {
-	// TODO: interafaceに入れるのは公開関数にする
-	gitClone(ctx context.Context) error
-	getCloneDir() string
+	GitClone(ctx context.Context) error
 }
 
 type Terraformer interface {
@@ -46,7 +44,7 @@ func (td *Terradiff) Compare(ctx context.Context) (*CompareResult, error) {
 }
 
 func (op *Operators) gitCloneAndgenPlanResult(ctx context.Context) (*PlanResult, error) {
-	err := op.git.gitClone(ctx)
+	err := op.git.GitClone(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +65,8 @@ func TerradiffAction(cCtx *cli.Context) error {
 
 	srcDir := filepath.Join(workDir, "src")
 	dstDir := filepath.Join(workDir, "dst")
-	srcGit := NewGit(repoURL, srcDir, srcBranch)
-	dstGit := NewGit(repoURL, dstDir, dstBranch)
+	srcGit := NewGit(NewCommandExecutor("."), repoURL, srcDir, srcBranch)
+	dstGit := NewGit(NewCommandExecutor("."), repoURL, dstDir, dstBranch)
 
 	// TODO: Terraformの実行パスを指定出来るようにする
 	srcTerraform := NewTerraform(NewCommandExecutor(srcDir))
