@@ -7,6 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+// TODO: cCtxに依存しないようにする。
 func SetLogger(cCtx *cli.Context) {
 	logLevel := slog.LevelInfo
 	if cCtx.Bool(debugFlag) {

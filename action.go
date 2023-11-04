@@ -57,6 +57,7 @@ func gitCloneAndgenPlanResult(ctx context.Context, git gitCloner) (*PlanResult, 
 	if err != nil {
 		return nil, err
 	}
+	// TODO: PlanDirを引数指定できるようにする
 	pr, err := generatePlanResult(ctx, git.getCloneDir())
 	if err != nil {
 		return nil, err
