@@ -2,8 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"os"
 	"path/filepath"
 
+	"github.com/cockroachdb/errors"
+	"github.com/google/go-cmp/cmp"
 	"github.com/urfave/cli/v2"
 )
 
@@ -40,7 +44,7 @@ func (td *Terradiff) Compare(ctx context.Context) (*CompareResult, error) {
 		return nil, err
 	}
 
-	return compare(srcResult, dstResult), nil
+	return td.compare(srcResult, dstResult), nil
 }
 
 func (op *Operators) gitCloneAndgenPlanResult(ctx context.Context) (*PlanResult, error) {
@@ -53,6 +57,24 @@ func (op *Operators) gitCloneAndgenPlanResult(ctx context.Context) (*PlanResult,
 		return nil, err
 	}
 	return pr, nil
+}
+
+type CompareResult struct {
+	IsEqual bool
+	Diff    string
+}
+
+func (td *Terradiff) compare(src, dst *PlanResult) *CompareResult {
+	var cr CompareResult
+	if cmp.Equal(src, dst) {
+		Logger().Info("resources are the same.")
+		cr.IsEqual = true
+	} else {
+		Logger().Info("resources are different.")
+		cr.IsEqual = false
+		cr.Diff = cmp.Diff(src, dst)
+	}
+	return &cr
 }
 
 func TerradiffAction(cCtx *cli.Context) error {
@@ -82,9 +104,26 @@ func TerradiffAction(cCtx *cli.Context) error {
 		return err
 	}
 
+	// TODO: resultのファイル名変更できるようにする
 	err = saveToFile(workDir+"/result.json", *cr)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func saveToFile(filename string, cr CompareResult) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return errors.Wrap(err, "failed to create file")
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	err = encoder.Encode(cr)
+	if err != nil {
+		return errors.Wrap(err, "failed to encode json")
 	}
 
 	return nil
