@@ -31,8 +31,8 @@ type Terraform struct {
 	r Runner
 }
 
-func NewTerraform(ce Runner) *Terraform {
-	return &Terraform{r: ce}
+func NewTerraform(r Runner) *Terraform {
+	return &Terraform{r: r}
 }
 
 func (tf *Terraform) init(ctx context.Context) error {
