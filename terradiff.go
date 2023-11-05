@@ -91,9 +91,10 @@ func TerradiffAction(cCtx *cli.Context) error {
 	srcGit := NewGit(NewCommandExecutor("."), repoURL, srcDir, srcBranch)
 	dstGit := NewGit(NewCommandExecutor("."), repoURL, dstDir, dstBranch)
 
-	// TODO: Terraformの実行パスを指定出来るようにする
-	srcTerraform := NewTerraform(NewCommandExecutor(srcDir))
-	dstTerrafom := NewTerraform(NewCommandExecutor(dstDir))
+	srcTerraformDir := filepath.Join(srcDir, cCtx.String(terraformDirFlag))
+	dstTerraformDir := filepath.Join(dstDir, cCtx.String(terraformDirFlag))
+	srcTerraform := NewTerraform(NewCommandExecutor(srcTerraformDir))
+	dstTerrafom := NewTerraform(NewCommandExecutor(dstTerraformDir))
 
 	terradiff := NewTerradiff(
 		Operators{tf: srcTerraform, git: srcGit},

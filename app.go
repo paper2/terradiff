@@ -3,12 +3,13 @@ package main
 import "github.com/urfave/cli/v2"
 
 const (
-	workDirFlag   = "work-dir"
-	srcBranchFlag = "source-branch"
-	dstBranchFlag = "destination-branch"
-	repoURLFlag   = "repository-url"
-	debugFlag     = "debug"
-	jsonFlag      = "json-log"
+	workDirFlag      = "work-dir"
+	srcBranchFlag    = "source-branch"
+	dstBranchFlag    = "destination-branch"
+	repoURLFlag      = "repository-url"
+	debugFlag        = "debug"
+	jsonFlag         = "json-log"
+	terraformDirFlag = "terraform-dir"
 )
 
 func NewApp() *cli.App {
@@ -47,6 +48,11 @@ func NewApp() *cli.App {
 			Name:  jsonFlag,
 			Value: false,
 			Usage: "json log",
+		},
+		&cli.StringFlag{
+			Name:  terraformDirFlag,
+			Value: ".",
+			Usage: "terraform root directory path on repository",
 		},
 	}
 	app.Action = TerradiffAction
