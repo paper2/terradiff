@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -103,6 +104,7 @@ func TerradiffAction(cCtx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	Logger().Info(fmt.Sprintf("%+v", cr))
 
 	// TODO: resultのファイル名変更できるようにする
 	err = saveToFile(workDir+"/result.json", *cr)
