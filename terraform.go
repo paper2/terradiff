@@ -5,53 +5,9 @@ import (
 	"encoding/json"
 )
 
-func generatePlanResult(ctx context.Context, testDir string) (*PlanResult, error) {
-	ce := NewCommandExecutor(testDir)
-
-	err := ce.RunContext(ctx, "terraform", "init")
-	if err != nil {
-		return nil, err
-	}
-
-	binaryName := "plan-result-binary"
-	err = ce.RunContext(ctx, "terraform", "plan", "-out="+binaryName)
-	if err != nil {
-		return nil, err
-	}
-
-	out, err := ce.RunContextAndCaptureOutput(ctx, "terraform", "show", "-json", binaryName)
-	if err != nil {
-		return nil, err
-	}
-	Logger().Debug(out)
-
-	var pr PlanResult
-	err = json.Unmarshal([]byte(out), &pr)
-	if err != nil {
-		return nil, err
-	}
-
-	return &pr, nil
-}
-
 type PlanResult struct {
-	// FormatVersion      string                  `json:"format_version"`
-	// PriorState         json.RawMessage         `json:"prior_state"`
-	// Configuration      json.RawMessage         `json:"configuration"`
-	// PlannedValues      json.RawMessage         `json:"planned_values"`
-	// ProposedUnknown    json.RawMessage         `json:"proposed_unknown"`
-	// Variables          map[string]Variable     `json:"variables"`
 	ResourceChanges []ResourceChange `json:"resource_changes"`
-	// ResourceDrift      []ResourceChange        `json:"resource_drift"`
-	// RelevantAttributes []RelevantAttribute     `json:"relevant_attributes"`
-	// OutputChanges map[string]OutputChange `json:"output_changes"`
-	// Checks             json.RawMessage         `json:"checks"`
-	// Errored            bool                    `json:"errored"`
 }
-
-// type Variable struct {
-// 	Value string `json:"value"`
-// }
 
 type ResourceChange struct {
 	Address         string          `json:"address"`
@@ -66,11 +22,53 @@ type ResourceChange struct {
 	ActionReason    string          `json:"action_reason"`
 }
 
-// type RelevantAttribute struct {
-// 	Resource  string `json:"resource"`
-// 	Attribute string `json:"attribute"`
-// }
+type Runner interface {
+	RunContext(ctx context.Context, name string, args ...string) error
+	RunContextAndCaptureOutput(ctx context.Context, name string, args ...string) (string, error)
+}
 
-// type OutputChange struct {
-// 	Change json.RawMessage `json:"change"`
-// }
+type Terraform struct {
+	r Runner
+}
+
+func NewTerraform(r Runner) *Terraform {
+	return &Terraform{r: r}
+}
+
+func (tf *Terraform) init(ctx context.Context) error {
+	return tf.r.RunContext(ctx, "terraform", "init")
+}
+
+func (tf *Terraform) genPlanBinary(ctx context.Context, path string) error {
+	return tf.r.RunContext(ctx, "terraform", "plan", "-out="+path)
+}
+
+func (tf *Terraform) unmarshalPlanBinary(ctx context.Context, path string) (*PlanResult, error) {
+	out, err := tf.r.RunContextAndCaptureOutput(ctx, "terraform", "show", "-json", path)
+	if err != nil {
+		return nil, err
+	}
+
+	var pr PlanResult
+	err = json.Unmarshal([]byte(out), &pr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pr, nil
+}
+
+func (tf Terraform) GenPlanResult(ctx context.Context) (*PlanResult, error) {
+	err := tf.init(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	binaryPath := "plan.binary"
+	err = tf.genPlanBinary(ctx, binaryPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return tf.unmarshalPlanBinary(ctx, binaryPath)
+}

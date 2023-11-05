@@ -8,6 +8,7 @@ const (
 	dstBranchFlag = "destination-branch"
 	repoURLFlag   = "repository-url"
 	debugFlag     = "debug"
+	jsonFlag      = "json-log"
 )
 
 func NewApp() *cli.App {
@@ -42,7 +43,12 @@ func NewApp() *cli.App {
 			Value: false,
 			Usage: "debug log",
 		},
+		&cli.BoolFlag{
+			Name:  jsonFlag,
+			Value: false,
+			Usage: "json log",
+		},
 	}
-	app.Action = terradiff
+	app.Action = TerradiffAction
 	return app
 }
