@@ -1,3 +1,5 @@
 terradiff
 .DS_Store
 coverage.out
+resource/test/terraform/*/.terraform.lock.hcl
+resource/test/terraform/*/.terraform/*
